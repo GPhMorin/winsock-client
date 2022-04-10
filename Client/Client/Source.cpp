@@ -6,6 +6,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <iostream>
+#include <string>
+
 
 // Need to link with Ws2_32.lib, Mswsock.lib, and Advapi32.lib
 #pragma comment (lib, "Ws2_32.lib")
@@ -13,8 +16,10 @@
 #pragma comment (lib, "AdvApi32.lib")
 
 
-#define DEFAULT_BUFLEN 512
+#define DEFAULT_BUFLEN 500000
 #define DEFAULT_PORT "33333"
+
+using namespace std;
 
 int __cdecl main(int argc, char** argv)
 {
@@ -84,16 +89,42 @@ int __cdecl main(int argc, char** argv)
         return 1;
     }
 
-    // Send an initial buffer
-    iResult = send(ConnectSocket, sendbuf, (int)strlen(sendbuf), 0);
-    if (iResult == SOCKET_ERROR) {
-        printf("send failed with error: %d\n", WSAGetLastError());
-        closesocket(ConnectSocket);
-        WSACleanup();
-        return 1;
-    }
+    string cmd;
+    bool exiting = false;
 
-    printf("Bytes Sent: %ld\n", iResult);
+    do
+    {
+        cout << ">>> ";
+        getline(cin, cmd);
+        if (cmd == "exit()\0") {
+            exiting = true;
+        }
+        else {
+            iResult = send(ConnectSocket, cmd.c_str(), (int)strlen(cmd.c_str()), 0);
+            if (iResult == SOCKET_ERROR) {
+                printf("send failed with error: %d\n", WSAGetLastError());
+                closesocket(ConnectSocket);
+                WSACleanup();
+                return 1;
+            }
+            printf("Bytes Sent: %ld\n", iResult);
+
+            iResult = recv(ConnectSocket, recvbuf, recvbuflen, 0);
+            if (iResult > 0) {
+                printf("Bytes received: %d\n", iResult);
+                for (int i = 0; i < iResult; i++) {
+                    cout << recvbuf[i];
+                }
+                cout << endl;
+            }
+            else if (iResult == 0)
+                printf("Connection closed\n");
+            else
+                printf("recv failed with error: %d\n", WSAGetLastError());
+        }
+        
+    } while (exiting == false);    
+
 
     // shutdown the connection since no more data will be sent
     iResult = shutdown(ConnectSocket, SD_SEND);
