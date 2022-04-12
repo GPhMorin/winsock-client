@@ -8,6 +8,9 @@
 
 #include <iostream>
 #include <string>
+#include <Mswsock.h>
+#include <fstream>
+#include <vector>
 
 
 // Need to link with Ws2_32.lib, Mswsock.lib, and Advapi32.lib
@@ -98,6 +101,66 @@ int __cdecl main(int argc, char** argv)
         getline(cin, cmd);
         if (cmd == "exit()\0") {
             exiting = true;
+        }
+        else if (cmd[0] == 's' || cmd[0] == 'S' && cmd[1] == 'e' || cmd[1] == 'E' && cmd[2] == 'n' || cmd[3] == 'N' && cmd[3] == 'd' || cmd[4] == 'D' && cmd[4] == ' ') {
+            string location = cmd;
+            location.erase(0, 5);
+
+            // https://stackoverflow.com/a/36659103
+            // open file
+            ifstream infile(location);
+            vector<char> buffer;
+
+            // get length of file
+            infile.seekg(0, infile.end);
+            size_t length = infile.tellg();
+            infile.seekg(0, infile.beg);
+
+            int nb = length / DEFAULT_BUFLEN + 1;
+            int ln = 18 + log10(nb);
+
+            iResult = send(ConnectSocket, "FILETRANSMISSION " + nb, ln, 0);
+            if (iResult == SOCKET_ERROR) {
+                printf("send failed with error: %d\n", WSAGetLastError());
+                closesocket(ConnectSocket);
+                WSACleanup();
+                return 1;
+            }
+            printf("Bytes Sent: %ld\n", iResult);
+
+            //read file
+            if (length > 0) {
+                buffer.resize(length);
+                infile.read(&buffer[0], length);
+            }
+
+            int i = 1;
+            string part = "";
+            for (auto it : buffer) {
+                part += it;
+                if (i % DEFAULT_BUFLEN == 0) {
+                    iResult = send(ConnectSocket, part.c_str(), strlen(part.c_str()), 0);
+                    if (iResult == SOCKET_ERROR) {
+                        printf("send failed with error: %d\n", WSAGetLastError());
+                        closesocket(ConnectSocket);
+                        WSACleanup();
+                        return 1;
+                    }
+                    printf("Bytes Sent: %ld\n", iResult);
+
+                    i = 0;
+                    part.clear();
+                }
+                i++;
+            }
+            iResult = send(ConnectSocket, part.c_str(), strlen(part.c_str()), 0);
+            if (iResult == SOCKET_ERROR) {
+                printf("send failed with error: %d\n", WSAGetLastError());
+                closesocket(ConnectSocket);
+                WSACleanup();
+                return 1;
+            }
+            printf("Bytes Sent: %ld\n", iResult);
         }
         else {
             iResult = send(ConnectSocket, cmd.c_str(), (int)strlen(cmd.c_str()), 0);
