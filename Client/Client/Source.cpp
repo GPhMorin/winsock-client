@@ -11,6 +11,7 @@
 #include <Mswsock.h>
 #include <fstream>
 #include <vector>
+#include <math.h>
 
 
 // Need to link with Ws2_32.lib, Mswsock.lib, and Advapi32.lib
@@ -19,7 +20,7 @@
 #pragma comment (lib, "AdvApi32.lib")
 
 
-#define DEFAULT_BUFLEN 500000
+#define DEFAULT_BUFLEN 4096
 #define DEFAULT_PORT "33333"
 
 using namespace std;
@@ -102,65 +103,146 @@ int __cdecl main(int argc, char** argv)
         if (cmd == "exit()\0") {
             exiting = true;
         }
-        else if (cmd[0] == 's' || cmd[0] == 'S' && cmd[1] == 'e' || cmd[1] == 'E' && cmd[2] == 'n' || cmd[3] == 'N' && cmd[3] == 'd' || cmd[4] == 'D' && cmd[4] == ' ') {
-            string location = cmd;
-            location.erase(0, 5);
+        else if (cmd[0] == 's' || cmd[0] == 'S') {
+            if (cmd[1] == 'e' || cmd[1] == 'E') {
+                if (cmd[2] == 'n' || cmd[2] == 'N') {
+                    if (cmd[3] == 'd' || cmd[3] == 'D') {
+                        if (cmd[4] == ' ') {
+                            string location = cmd;
+                            location.erase(0, 5);
 
-            // https://stackoverflow.com/a/36659103
-            // open file
-            ifstream infile(location);
-            vector<char> buffer;
+                            // https://stackoverflow.com/a/36659103
+                            // https://stackoverflow.com/questions/15170161/c-winsock-sending-
+                            // open file
 
-            // get length of file
-            infile.seekg(0, infile.end);
-            size_t length = infile.tellg();
-            infile.seekg(0, infile.beg);
+                            ifstream infile(location, ios::binary);
+                            // ZeroMemory(&recvbuf, recvbuflen);
 
-            int nb = length / DEFAULT_BUFLEN + 1;
-            int ln = 18 + log10(nb);
+                            /* if (infile.is_open()) {
+                                while (true) {
+                                    infile.read(recvbuf, recvbuflen);
+                                    if (infile.eof()) {
+                                        infile.close();
+                                        break;
+                                    }
+                                    else {
+                                        send(ConnectSocket, recvbuf, recvbuflen, 0);
+                                        ZeroMemory(&recvbuf, recvbuflen);
+                                    }
+                                }
+                            } */
 
-            iResult = send(ConnectSocket, "FILETRANSMISSION " + nb, ln, 0);
-            if (iResult == SOCKET_ERROR) {
-                printf("send failed with error: %d\n", WSAGetLastError());
-                closesocket(ConnectSocket);
-                WSACleanup();
-                return 1;
-            }
-            printf("Bytes Sent: %ld\n", iResult);
+                            vector<char> buffer;
 
-            //read file
-            if (length > 0) {
-                buffer.resize(length);
-                infile.read(&buffer[0], length);
-            }
+                            // get length of file
+                            infile.seekg(0, infile.end);
+                            size_t length = infile.tellg();
+                            infile.seekg(0, infile.beg);
 
-            int i = 1;
-            string part = "";
-            for (auto it : buffer) {
-                part += it;
-                if (i % DEFAULT_BUFLEN == 0) {
-                    iResult = send(ConnectSocket, part.c_str(), strlen(part.c_str()), 0);
-                    if (iResult == SOCKET_ERROR) {
-                        printf("send failed with error: %d\n", WSAGetLastError());
-                        closesocket(ConnectSocket);
-                        WSACleanup();
-                        return 1;
+                            int nb = ceil((float) length / (float) DEFAULT_BUFLEN);
+                            string message = "FILETRANSMISSION " + to_string(nb);
+
+                            iResult = send(ConnectSocket, message.c_str(), message.size(), 0);
+                            if (iResult == SOCKET_ERROR) {
+                                printf("send failed with error: %d\n", WSAGetLastError());
+                                closesocket(ConnectSocket);
+                                WSACleanup();
+                                return 1;
+                            }
+                            printf("Bytes Sent: %ld\n", iResult);
+
+                            //read file
+                            if (length > 0) {
+                                buffer.resize(length);
+                                infile.read(&buffer[0], length);
+                            }
+
+                            int i = 1;
+                            string part = "";
+                            for (auto it : buffer) {
+                                part += it;
+                                if (i % DEFAULT_BUFLEN == 0) {
+                                    iResult = send(ConnectSocket, part.c_str(), strlen(part.c_str()), 0);
+                                    if (iResult == SOCKET_ERROR) {
+                                        printf("send failed with error: %d\n", WSAGetLastError());
+                                        closesocket(ConnectSocket);
+                                        WSACleanup();
+                                        return 1;
+                                    }
+                                    printf("Bytes Sent: %ld\n", iResult);
+
+                                    i = 0;
+                                    part.clear();
+                                }
+                                i++;
+                            }
+                            iResult = send(ConnectSocket, part.c_str(), strlen(part.c_str()), 0);
+                            if (iResult == SOCKET_ERROR) {
+                                printf("send failed with error: %d\n", WSAGetLastError());
+                                closesocket(ConnectSocket);
+                                WSACleanup();
+                                return 1;
+                            }
+                            printf("Bytes Sent: %ld\n", iResult);
+                        }
                     }
-                    printf("Bytes Sent: %ld\n", iResult);
-
-                    i = 0;
-                    part.clear();
                 }
-                i++;
             }
-            iResult = send(ConnectSocket, part.c_str(), strlen(part.c_str()), 0);
-            if (iResult == SOCKET_ERROR) {
-                printf("send failed with error: %d\n", WSAGetLastError());
-                closesocket(ConnectSocket);
-                WSACleanup();
-                return 1;
+        }
+        else if (cmd[0] == 'r' || cmd[0] == 'R') {
+            if (cmd[1] == 'e' || cmd[1] == 'E') {
+                if (cmd[2] == 'c' || cmd[2] == 'C') {
+                    if (cmd[3] == 'e' || cmd[3] == 'E') {
+                        if (cmd[4] == 'i' || cmd[4] == 'I') {
+                            if (cmd[5] == 'v' || cmd[5] == 'V') {
+                                if (cmd[6] == 'e' || cmd[6] == 'E') {
+                                    if (cmd[7] == ' ') {
+                                        string location = cmd;
+                                        location.erase(0, 8);
+
+                                        string message = "FILERECEIVE " + location;
+
+                                        iResult = send(ConnectSocket, message.c_str(), message.size(), 0);
+                                        if (iResult == SOCKET_ERROR) {
+                                            printf("send failed with error: %d\n", WSAGetLastError());
+                                            closesocket(ConnectSocket);
+                                            WSACleanup();
+                                            return 1;
+                                        }
+                                        printf("Bytes Sent: %ld\n", iResult);
+
+                                        iResult = recv(ConnectSocket, recvbuf, recvbuflen, 0);
+
+                                        // Ici on reçoit le message "FILETRANSMISSION" avec le nombre de transferts à faire.
+                                        char* str = recvbuf;
+                                        str[iResult] = '\0';
+                                        string nb_str(str, strlen(str));
+                                        nb_str.erase(0, 17);
+                                        int nb = stoi(nb_str);
+
+                                        ofstream output(".\\log.txt", ios::binary);
+
+                                        vector<unsigned char> buffer;
+
+                                        for (int i = 0; i < nb; i++) {
+                                            iResult = recv(ConnectSocket, recvbuf, recvbuflen, 0);
+                                            for (int i = 0; i < iResult; i++) {
+                                                buffer.push_back(recvbuf[i]);
+                                            }
+                                        }
+
+                                        for (auto it : buffer) {
+                                            output << it;
+                                        }
+
+                                        output.close();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
-            printf("Bytes Sent: %ld\n", iResult);
         }
         else {
             iResult = send(ConnectSocket, cmd.c_str(), (int)strlen(cmd.c_str()), 0);
@@ -197,19 +279,6 @@ int __cdecl main(int argc, char** argv)
         WSACleanup();
         return 1;
     }
-
-    // Receive until the peer closes the connection
-    do {
-
-        iResult = recv(ConnectSocket, recvbuf, recvbuflen, 0);
-        if (iResult > 0)
-            printf("Bytes received: %d\n", iResult);
-        else if (iResult == 0)
-            printf("Connection closed\n");
-        else
-            printf("recv failed with error: %d\n", WSAGetLastError());
-
-    } while (iResult > 0);
 
     // cleanup
     closesocket(ConnectSocket);
