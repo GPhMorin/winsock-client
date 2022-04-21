@@ -113,27 +113,58 @@ int __cdecl main(int argc, char** argv)
 
                             // https://stackoverflow.com/a/36659103
                             // https://stackoverflow.com/questions/15170161/c-winsock-sending-
+                            // https://stackoverflow.com/a/18816228
                             // open file
 
-                            ifstream infile(location, ios::binary);
-                            // ZeroMemory(&recvbuf, recvbuflen);
+                            ifstream infile(location, ios::binary | ios::ate);
+                            streamsize size = infile.tellg();
+                            infile.seekg(0, ios::beg);
 
-                            /* if (infile.is_open()) {
-                                while (true) {
-                                    infile.read(recvbuf, recvbuflen);
-                                    if (infile.eof()) {
-                                        infile.close();
-                                        break;
-                                    }
-                                    else {
-                                        send(ConnectSocket, recvbuf, recvbuflen, 0);
-                                        ZeroMemory(&recvbuf, recvbuflen);
-                                    }
+                            vector<char> buffer(size);
+                            if (infile.read(buffer.data(), size)) {
+                                int nb = ceil((float)size / (float)DEFAULT_BUFLEN);
+                                string message = "FILETRANSMISSION " + to_string(nb);
+
+                                iResult = send(ConnectSocket, message.c_str(), message.size(), 0);
+                                if (iResult == SOCKET_ERROR) {
+                                    printf("send failed with error: %d\n", WSAGetLastError());
+                                    closesocket(ConnectSocket);
+                                    WSACleanup();
+                                    return 1;
                                 }
-                            } */
+                                printf("Bytes Sent: %ld\n", iResult);
 
-                            vector<char> buffer;
+                                int i = 1;
+                                string part = "";
+                                for (auto it : buffer) {
+                                    part += it;
+                                    if (i % DEFAULT_BUFLEN == 0) {
+                                        iResult = send(ConnectSocket, part.c_str(), part.size(), 0);
+                                        if (iResult == SOCKET_ERROR) {
+                                            printf("send failed with error: %d\n", WSAGetLastError());
+                                            closesocket(ConnectSocket);
+                                            WSACleanup();
+                                            return 1;
+                                        }
+                                        printf("Bytes Sent: %ld\n", iResult);
 
+                                        i = 0;
+                                        part.clear();
+                                    }
+                                    i++;
+                                }
+                                iResult = send(ConnectSocket, part.c_str(), part.size(), 0);
+                                if (iResult == SOCKET_ERROR) {
+                                    printf("send failed with error: %d\n", WSAGetLastError());
+                                    closesocket(ConnectSocket);
+                                    WSACleanup();
+                                    return 1;
+                                }
+                                printf("Bytes Sent: %ld\n", iResult);
+
+                            }
+
+                            /*
                             // get length of file
                             infile.seekg(0, infile.end);
                             size_t length = infile.tellg();
@@ -184,6 +215,7 @@ int __cdecl main(int argc, char** argv)
                                 return 1;
                             }
                             printf("Bytes Sent: %ld\n", iResult);
+                            */
                         }
                     }
                 }

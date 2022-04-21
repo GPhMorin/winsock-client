@@ -1,3 +1,6 @@
 ﻿  Source.cpp
-C:\temp\winsock-client\Client\Client\Source.cpp(205,105): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-  Client.vcxproj -> C:\temp\winsock-client\Client\x64\Debug\Client.exe
+C:\temp\winsock-client\Client\Client\Source.cpp(125,40): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+C:\temp\winsock-client\Client\Client\Source.cpp(128,97): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+C:\temp\winsock-client\Client\Client\Source.cpp(142,99): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+C:\temp\winsock-client\Client\Client\Source.cpp(156,91): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+C:\temp\winsock-client\Client\Client\Source.cpp(237,105): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
